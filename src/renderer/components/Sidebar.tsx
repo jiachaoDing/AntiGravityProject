@@ -108,6 +108,12 @@ export function Sidebar({
     setSearchQuery(e.target.value)
   }
 
+  const handleClearSearch = () => {
+    setSearchQuery('')
+    setSearching(false)
+    setSearchResults([])
+  }
+
   const performSearch = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([])
@@ -211,6 +217,15 @@ export function Sidebar({
               value={searchQuery}
               onChange={handleSearchInput}
             />
+            {!collapsed && searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="flex-shrink-0 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 

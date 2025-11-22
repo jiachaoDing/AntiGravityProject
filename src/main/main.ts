@@ -60,7 +60,9 @@ async function createWindow() {
     } else {
         win.loadFile(indexHtml)
     }
-    win.webContents.openDevTools()
+
+    //打开开发者工具
+    // win.webContents.openDevTools()
 
     // Show window when content is ready
     win.once('ready-to-show', () => {
