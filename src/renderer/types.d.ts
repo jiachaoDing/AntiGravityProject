@@ -21,6 +21,7 @@ declare global {
             getConversationsByPlatform: (platform: string) => Promise<any[]>
             advancedSearch: (query: any) => Promise<any[]>
             reindexMessages: () => Promise<{ success: boolean; count: number }>
+            tokenize: (text: string) => Promise<string[]>
 
             // Settings APIs
             getStorageStats: () => Promise<{ conversationCount: number; messageCount: number; sizeInBytes: number; sizeInMB: string }>

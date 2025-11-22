@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, Trash2, Database, Settings as SettingsIcon, Globe, Moon, Sun } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 

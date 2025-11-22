@@ -162,6 +162,10 @@ ipcMain.handle('storage:delete-conversation', async (_, id) => {
 })
 ipcMain.handle('storage:get-by-platform', (_, platform) => dbService.getConversationsByPlatform(platform))
 ipcMain.handle('storage:advanced-search', (_, query) => dbService.advancedSearch(query))
+ipcMain.handle('storage:tokenize', async (_, text) => {
+    const { tokenizerService } = await import('./services/tokenizer')
+    return tokenizerService.tokenize(text)
+})
 ipcMain.handle('storage:reindex-messages', () => dbService.reindexMessages())
 
 // Settings APIs

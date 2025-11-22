@@ -15,7 +15,7 @@ import { X } from 'lucide-react' // 引入关闭图标
 type SidebarView = 'home' | 'settings' | 'chat' | 'history' | 'search'
 
 interface SidebarProps {
-  onNavigate: (view: SidebarView, id?: string) => void
+  onNavigate: (view: SidebarView, id?: string, messageId?: string, keywords?: string) => void
   sessions?: any[]
   activeSessionId?: string | null
   onActivateSession?: (id: string) => void
@@ -40,6 +40,10 @@ export function Sidebar({
     y: number
     conversationId: string | null
   }>({ visible: false, x: 0, y: 0, conversationId: null })
+
+  // Search state
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
 
   // 定义一个状态变量 `view` 和一个更新 `view` 的函数 `setView`。
   // `view` 的初始值被设置为 `'home'`。
@@ -100,16 +104,50 @@ export function Sidebar({
     isFirstLoad.current = false
   }
 
-  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value
-    setSearchQuery(query)
-    if (query.length > 2) {
-      const results = await window.electronAPI.searchMessages(query)
-      console.log('Search results:', results)
-    } else {
-      loadConversations()
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
+  const performSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      setSearching(false)
+      return
+    }
+
+    setSearching(true)
+    try {
+      const query = {
+        keyword: searchQuery.trim(),
+        filters: { platform: [], sender: undefined },
+        options: {
+          limit: 50,
+          offset: 0,
+          highlight: true
+        }
+      }
+      const data = await window.electronAPI.advancedSearch(query)
+      setSearchResults(data)
+    } catch (error) {
+      console.error('Search failed:', error)
+    } finally {
+      setSearching(false)
     }
   }
+
+  // Debounced search on keyword change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        performSearch()
+      } else {
+        setSearchResults([])
+        setSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const handleDeleteConversation = async (conversationId: string) => {
     if (confirm('Are you sure you want to delete this conversation?')) {
@@ -171,7 +209,7 @@ export function Sidebar({
                 collapsed ? "w-0 opacity-0 p-0" : "w-full opacity-100 min-w-0"
               )}
               value={searchQuery}
-              onChange={handleSearch}
+              onChange={handleSearchInput}
             />
           </div>
         </div>
@@ -262,51 +300,98 @@ export function Sidebar({
         {/* Scrollable Recent Chats Area */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar overflow-x-hidden">
           <div className={clsx("text-xs font-semibold text-gray-500 uppercase tracking-wider overflow-hidden whitespace-nowrap transition-all duration-300", collapsed ? "h-0 opacity-0 mb-0" : "h-auto opacity-100 mb-2 px-2")}>
-            Recent Chats
+            {searchQuery.trim() ? 'Search Results' : 'Recent Chats'}
           </div>
 
-          {conversations.map(conv => (
-            <div
-              key={conv.id}
-              className={clsx(
-                "p-3 rounded-lg cursor-pointer flex flex-col gap-1 group transition-all duration-200 border overflow-hidden",
-                activeConversationId === conv.id
-                  ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm"
-                  : "border-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50",
-                highlightedIds.has(conv.id)
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-500/20 shadow-lg shadow-blue-500/50 animate-pulse"
-                  : "",
-                collapsed && "items-center"
-              )}
-              onClick={() => {
-                setView('history');
-                onNavigate('history', conv.id)
-              }}
-              onContextMenu={(e) => handleContextMenu(e, conv.id)}
-              title={conv.title}
-            >
-              <div className="flex items-center gap-2 w-full">
-                <MessageSquare size={16} className={clsx("flex-shrink-0", activeConversationId === conv.id ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-gray-500")} />
-                <div className={clsx("text-sm font-medium text-gray-700 dark:text-gray-200 truncate flex-1 transition-all duration-300", collapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
-                  {conv.title || 'New Chat'}
-                </div>
-              </div>
-
-              <div className={clsx("flex items-center justify-between text-xs text-gray-500 mt-1 transition-all duration-300 overflow-hidden", collapsed ? "h-0 opacity-0" : "h-auto opacity-100")}>
-                <div className="flex items-center gap-2">
-                  <span className="bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 uppercase text-[10px] tracking-wider">
-                    {conv.platform}
-                  </span>
-                  <span className="flex items-center gap-1" title="Message Count">
-                    {conv.message_count || 0} msgs
-                  </span>
-                </div>
-                <span title={new Date(conv.updated_at).toLocaleString()}>
-                  {new Date(conv.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
+          {searching ? (
+            <div className={clsx("text-center py-4 text-xs text-gray-500", collapsed && "hidden")}>
+              Searching...
             </div>
-          ))}
+          ) : searchQuery.trim() && searchResults.length === 0 ? (
+            <div className={clsx("text-center py-4 text-xs text-gray-500", collapsed && "hidden")}>
+              No results found
+            </div>
+          ) : (
+            (searchQuery.trim() ? searchResults : conversations).map(item => {
+              // Determine if this is a search result or a regular conversation
+              const isSearchResult = searchQuery.trim() && 'conversation_id' in item
+              const itemId = isSearchResult ? item.conversation_id : item.id
+              const messageId = isSearchResult ? item.id : undefined
+
+              return (
+                <div
+                  key={isSearchResult ? item.id : item.id}
+                  className={clsx(
+                    "p-3 rounded-lg cursor-pointer flex flex-col gap-1 group transition-all duration-200 border overflow-hidden",
+                    activeConversationId === itemId
+                      ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm"
+                      : "border-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50",
+                    !isSearchResult && highlightedIds.has(item.id)
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-500/20 shadow-lg shadow-blue-500/50 animate-pulse-slow"
+                      : "",
+                    collapsed && "items-center"
+                  )}
+                  onClick={async () => {
+                    setView('history');
+                    if (isSearchResult) {
+                      // For search results, navigate with messageId and tokenized keywords
+                      const tokens = await window.electronAPI.tokenize(searchQuery)
+                      onNavigate('history', itemId, messageId, tokens.join(' '))
+                    } else {
+                      onNavigate('history', itemId)
+                    }
+                  }}
+                  onContextMenu={(e) => !isSearchResult && handleContextMenu(e, item.id)}
+                  title={item.title}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <MessageSquare size={16} className={clsx("flex-shrink-0", activeConversationId === itemId ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-gray-500")} />
+                    <div className={clsx("text-sm font-medium text-gray-700 dark:text-gray-200 truncate flex-1 transition-all duration-300", collapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                      {item.title || 'New Chat'}
+                    </div>
+                  </div>
+
+                  {isSearchResult ? (
+                    // Search result display with snippet
+                    <div className={clsx("transition-all duration-300 overflow-hidden", collapsed ? "h-0 opacity-0" : "h-auto opacity-100")}>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                        <span className="bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 uppercase text-[10px] tracking-wider">
+                          {item.platform}
+                        </span>
+                        <span className={clsx(
+                          "px-1.5 py-0.5 rounded text-[10px]",
+                          item.sender === 'user' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                        )}>
+                          {item.sender}
+                        </span>
+                        <span className="text-[10px]">
+                          {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div
+                        className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: item.snippet }}
+                      />
+                    </div>
+                  ) : (
+                    // Regular conversation display
+                    <div className={clsx("flex items-center justify-between text-xs text-gray-500 mt-1 transition-all duration-300 overflow-hidden", collapsed ? "h-0 opacity-0" : "h-auto opacity-100")}>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 uppercase text-[10px] tracking-wider">
+                          {item.platform}
+                        </span>
+                        <span className="flex items-center gap-1" title="Message Count">
+                          {item.message_count || 0} msgs
+                        </span>
+                      </div>
+                      <span title={new Date(item.updated_at).toLocaleString()}>
+                        {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            }))}
         </div>
 
         {/* 底部区域 */}

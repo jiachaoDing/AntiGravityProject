@@ -3,16 +3,18 @@ import { clsx } from 'clsx'
 import { SearchQuery } from '../../preload/types'
 
 interface SearchResult {
-    id: string
-    content: string
-    thinking?: string
-    created_at: string
-    sender: 'user' | 'AI'
-    platform: string
-    title: string
-    conversation_id: string
-    snippet: string
+    id: string // 消息的唯一标识符
+    content: string // 消息的原始内容
+    thinking?: string // AI思考过程（可选）
+    created_at: string // 消息创建时间
+    sender: 'user' | 'AI' // 消息发送者：用户或AI
+    platform: string // 消息所属平台
+    title: string // 对话标题
+    conversation_id: string // 对话的唯一标识符
+    snippet: string // 消息内容的摘要或片段
 }
+
+
 
 interface SearchPageProps {
     onNavigate: (view: 'history', conversationId: string, messageId?: string, keywords?: string) => void
@@ -133,8 +135,10 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
         })
     }
 
-    const handleResultClick = (conversationId: string, messageId: string) => {
-        onNavigate('history', conversationId, messageId, keyword)
+    const handleResultClick = async (conversationId: string, messageId: string) => {
+        // Tokenize keyword for proper multi-word highlighting
+        const tokens = await window.electronAPI.tokenize(keyword)
+        onNavigate('history', conversationId, messageId, tokens.join(' '))
     }
 
     return (
@@ -241,30 +245,36 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
             </div>
 
 
-            {/* Results */}
+            {/* 结果区域 */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {loading ? (
-                    <div className="text-center py-10 text-gray-500">Searching...</div>
+                    // 加载中状态显示
+                    <div className="text-center py-10 text-gray-500">搜索中...</div>
                 ) : results.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">No results found</div>
+                    // 没有搜索结果时显示
+                    <div className="text-center py-10 text-gray-500">未找到结果</div>
                 ) : (
+                    // 遍历并渲染每个搜索结果
                     results.map((item) => (
                         <div
-                            key={item.id}
-                            onClick={() => handleResultClick(item.conversation_id, item.id)}
+                            key={item.id} // 唯一键
+                            onClick={() => handleResultClick(item.conversation_id, item.id)} // 点击结果时的处理函数
                             className="p-4 rounded-xl bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark hover:border-primary-500 transition-colors cursor-pointer group"
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
+                                    {/* 平台标签 (ChatGPT 或 Claude) */}
                                     <span className={clsx(
                                         "text-xs px-2 py-0.5 rounded font-medium uppercase",
                                         item.platform === 'chatgpt' ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                                     )}>
                                         {item.platform}
                                     </span>
+                                    {/* 创建时间 */}
                                     <span className="text-xs text-gray-500">
                                         {new Date(item.created_at).toLocaleString()}
                                     </span>
+                                    {/* 发送者标签 (用户 或 AI) */}
                                     <span className={clsx(
                                         "text-xs px-2 py-0.5 rounded font-medium",
                                         item.sender === 'user' ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200" : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
@@ -274,10 +284,12 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
                                 </div>
                             </div>
 
+                            {/* 结果标题 */}
                             <h3 className="font-semibold text-lg mb-2 text-gray-800 dark:text-gray-200 group-hover:text-primary-500 transition-colors">
-                                {item.title || 'Untitled Conversation'}
+                                {item.title || '无标题对话'} {/* 如果没有标题则显示“无标题对话” */}
                             </h3>
 
+                            {/* 结果摘要/片段，使用 dangerouslySetInnerHTML 渲染 HTML 内容 */}
                             <div
                                 className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 leading-relaxed"
                                 dangerouslySetInnerHTML={{ __html: item.snippet }}

@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteConversation: (conversationId: string) => ipcRenderer.invoke('storage:delete-conversation', conversationId),
     getConversationsByPlatform: (platform: string) => ipcRenderer.invoke('storage:get-by-platform', platform),
     advancedSearch: (query: any) => ipcRenderer.invoke('storage:advanced-search', query),
+    tokenize: (text: string) => ipcRenderer.invoke('storage:tokenize', text),
     reindexMessages: () => ipcRenderer.invoke('storage:reindex-messages'),
 
     // Settings APIs

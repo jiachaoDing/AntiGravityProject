@@ -14,7 +14,6 @@ import { DeepSeekAdapter } from './adapters/deepseek';
 import { KimiAdapter } from './adapters/kimi';
 import { QwenAdapter } from './adapters/qwen';
 import { storageManager } from './core/storage-manager';
-import type { Message } from './types';
 
 console.log('🚀 Injector loaded');
 ipcRenderer.sendToHost('injector-loaded');
