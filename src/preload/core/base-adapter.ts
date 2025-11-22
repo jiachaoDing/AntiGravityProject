@@ -27,7 +27,7 @@ export abstract class BasePlatformAdapter {
     /**
      * Helper: Generate a consistent message ID
      */
-    protected generateMessageId(sender: string, content: string, position: number): string {
+    protected generateMessageId(sender: string, _content: string, position: number): string {
         return `msg_${sender}_position_${position}`;
     }
 

@@ -3,6 +3,7 @@ import path from 'node:path'
 import { release } from 'node:os'
 import { dbService } from './services/database'
 import { configService } from './services/config'
+import { tokenizerService } from './services/tokenizer'
 
 // Disable GPU Acceleration to prevent crashes
 app.disableHardwareAcceleration()
@@ -22,7 +23,7 @@ let win: BrowserWindow | null = null
 
 const preload = path.join(__dirname, 'index.js')
 const url = process.env.VITE_DEV_SERVER_URL
-const indexHtml = path.join(__dirname, '../renderer/index.html')
+const indexHtml = path.join(__dirname, '../dist/index.html')
 
 async function createWindow() {
     win = new BrowserWindow({
@@ -162,8 +163,7 @@ ipcMain.handle('storage:delete-conversation', async (_, id) => {
 })
 ipcMain.handle('storage:get-by-platform', (_, platform) => dbService.getConversationsByPlatform(platform))
 ipcMain.handle('storage:advanced-search', (_, query) => dbService.advancedSearch(query))
-ipcMain.handle('storage:tokenize', async (_, text) => {
-    const { tokenizerService } = await import('./services/tokenizer')
+ipcMain.handle('storage:tokenize', (_, text) => {
     return tokenizerService.tokenize(text)
 })
 ipcMain.handle('storage:reindex-messages', () => dbService.reindexMessages())
@@ -181,7 +181,7 @@ ipcMain.handle('clear-all-data', async () => {
 })
 
 // Legacy support (can be removed later)
-ipcMain.handle('get-messages', (_, id) => {
+ipcMain.handle('get-messages', (_, _id) => {
     return []
 })
 ipcMain.handle('save-message', async () => {

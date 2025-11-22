@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react' // 引入 React 核心库，以及 useState、useEffect 和 useRef Hooks
-import { Search, MessageSquare, Settings, ChevronLeft, ChevronRight, Home, Globe } from 'lucide-react' // 引入来自 lucide-react 的图标组件
+import { Search, MessageSquare, Settings, ChevronLeft, ChevronRight, Home } from 'lucide-react' // 引入来自 lucide-react 的图标组件
 import { clsx } from 'clsx' // 引入 clsx 工具函数，用于条件性地拼接 CSS 类名
 
 import { X } from 'lucide-react' // 引入关闭图标

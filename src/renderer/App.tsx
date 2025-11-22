@@ -31,15 +31,31 @@ function AppContent() {
 
     // Hide loading animation when app is ready
     useEffect(() => {
-        const loader = document.getElementById('app-loader')
-        if (loader) {
-            // Fade out animation
-            loader.style.opacity = '0'
-            // Remove from DOM after transition
-            setTimeout(() => {
-                loader.remove()
-            }, 500)
+        console.log('App mounted, attempting to remove loader...')
+        const removeLoader = () => {
+            const loader = document.getElementById('app-loader')
+            if (loader) {
+                console.log('Loader found, removing...')
+                // Fade out animation
+                loader.style.opacity = '0'
+                // Remove from DOM after transition
+                setTimeout(() => {
+                    loader.remove()
+                    console.log('Loader removed from DOM')
+                }, 500)
+            }
         }
+
+        // Attempt to remove loader immediately
+        removeLoader()
+
+        // Fallback: ensure loader is removed even if initial attempt fails
+        const timer = setTimeout(() => {
+            if (document.getElementById('app-loader')) {
+                removeLoader()
+            }
+        }, 1000)
+        return () => clearTimeout(timer)
     }, [])
 
     const handleNavigate = (newView: ViewState, conversationId?: string, messageId?: string, keywords?: string) => {

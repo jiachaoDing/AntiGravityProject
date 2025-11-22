@@ -78,7 +78,6 @@ export const DataUtils = {
  * Unified Compatibility Handler
  */
 export class Compatibility {
-    private version = 2;
     private messageCache = new Map<string, { data: any; timestamp: number }>();
     private hashCache = new Map<string, string>();
     private cacheExpiry = 5 * 60 * 1000; // 5 minutes
@@ -167,7 +166,7 @@ export class Compatibility {
         }
 
         // Detect deleted messages
-        for (const [messageId, message] of storedMap) {
+        for (const [messageId, _] of storedMap) {
             if (!currentMap.has(messageId)) {
                 changes.deleted.push(messageId);
             }

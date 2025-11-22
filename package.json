@@ -8,6 +8,24 @@
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
+  "build": {
+    "appId": "com.electron.ai.browser",
+    "productName": "Electron AI Browser",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
   "dependencies": {
     "axios": "^1.6.2",
     "better-sqlite3": "^9.1.1",

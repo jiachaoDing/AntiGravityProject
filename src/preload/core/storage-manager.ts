@@ -9,7 +9,7 @@
  * - Batch operations
  */
 
-import type { Message, Conversation, MessageChanges } from '../types';
+import type { Message, Conversation } from '../types';
 import { ElectronStorageAdapter } from './storage-adapter';
 import { Compatibility } from './compatibility';
 

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Minus, Square, X, Moon, Sun } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
