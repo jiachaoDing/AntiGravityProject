@@ -60,42 +60,63 @@ export class CopilotAdapter extends BasePlatformAdapter {
 
     /**
      * Extract all messages from the page
-     * Note: Copilot uses Shadow DOM, requires special handling
+     * Conversation container: [data-content="conversation"]
+     * User messages: [data-content="user-message"]
+     * AI messages: [data-content="ai-message"]
      */
     extractMessages(): Message[] {
         const messages: Message[] = [];
 
         try {
-            // Try to find conversation container
-            // Note: Selectors may need to be updated as Microsoft changes their UI
-            const chatContainer = document.querySelector('[class*="conversation"]') ||
-                document.querySelector('[class*="thread"]') ||
-                document.querySelector('main') ||
-                document.body;
-
-            if (!chatContainer) {
+            // Find conversation container
+            const conversationContainer = document.querySelector('[data-content="conversation"]');
+            if (!conversationContainer) {
                 console.log('⚠️ Copilot conversation container not found');
                 return messages;
             }
 
-            // Find message elements
-            // Note: These selectors are approximate and may need adjustment
-            const messageElements = chatContainer.querySelectorAll('[class*="message"], [class*="turn"]');
+            // Check if user is editing (avoid capturing incomplete input)
+            const existTextarea = conversationContainer.querySelector('textarea');
+            if (existTextarea) {
+                console.log('CopilotAdapter: User is editing, skipping extraction');
+                return [];
+            }
 
-            console.log(`📝 Found ${messageElements.length} potential message elements`);
+            // Extract all message elements in DOM order
+            const userMessages = conversationContainer.querySelectorAll('[data-content="user-message"]');
+            const aiMessages = conversationContainer.querySelectorAll('[data-content="ai-message"]');
 
-            messageElements.forEach((element, index) => {
-                const text = element.textContent?.trim();
+            // Combine all messages and sort by their position in DOM
+            const allMessageElements: Array<{ element: Element; sender: 'user' | 'AI' }> = [];
+
+            userMessages.forEach(element => {
+                allMessageElements.push({ element, sender: 'user' });
+            });
+
+            aiMessages.forEach(element => {
+                allMessageElements.push({ element, sender: 'AI' });
+            });
+
+            // Sort by DOM position using compareDocumentPosition
+            allMessageElements.sort((a, b) => {
+                const position = a.element.compareDocumentPosition(b.element);
+                if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+                    return -1;
+                }
+                if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            console.log(`📝 Found ${userMessages.length} user messages and ${aiMessages.length} AI messages`);
+
+            // Process messages in DOM order
+            allMessageElements.forEach(({ element, sender }, index) => {
+                const text = this.extractFormattedContent(element);
                 if (!text) return;
 
-                // Determine if it's a user or AI message
-                // This is heuristic-based and may need refinement
-                const isUser = element.classList.toString().includes('user') ||
-                    element.querySelector('[class*="user"]') !== null;
-
-                const sender = isUser ? 'user' : 'AI';
                 const messageId = this.generateMessageId(sender, text, index);
-
                 messages.push({
                     messageId,
                     sender,

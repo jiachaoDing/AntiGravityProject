@@ -51,6 +51,10 @@ export class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_conversations_url ON conversations_v2(url);
       CREATE INDEX IF NOT EXISTS idx_conversations_platform ON conversations_v2(platform);
 
+      -- FTS5 for full text search (Legacy)
+      CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts_v2 USING fts5(content, thinking, content='messages_v2', content_rowid='rowid');
+
+
       -- New FTS5 Index for Vertical Search (Tokenized)
       -- content='messages_v2' means it's an external content table linked to messages_v2
       CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts_index USING fts5(

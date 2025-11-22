@@ -80,61 +80,70 @@ export class DoubaoAdapter extends BasePlatformAdapter {
     extractMessages(): Message[] {
         const messages: Message[] = [];
 
-        // Directly find all elements containing message_text_content
+        // 直接查找所有带有 message_text_content 的元素
         const messageTextElements = document.querySelectorAll('[data-testid="message_text_content"]');
+        // 存放消息容器的数组
         const messageContainers: Element[] = [];
 
+        // 遍历每个文本元素，向上查找所属的消息容器（避免重复）
         messageTextElements.forEach(textElement => {
-            const container = textElement.closest('.container-PrUkKo');
+            // 向上查找 class 包含 container-PvPoAn 的父容器
+            const container = textElement.closest('[data-testid="message-block-container"]');
+            // 如果找到并且未被加入过数组，则加入
             if (container && !messageContainers.includes(container)) {
                 messageContainers.push(container);
             }
         });
 
+        // 如果没有消息容器，则直接返回空数组
         if (messageContainers.length === 0) {
             return messages;
         }
 
-        // Check if user is editing
+        // 检查消息框内是否有正在编辑的文本输入，如果有则跳过提取，防止保存未完成或中间状态的内容
         const existTextarea = messageContainers.find(element => this.isInEditMode(element as HTMLElement));
         if (existTextarea) {
             console.log('DoubaoAdapter: User is editing, skipping extraction');
             return [];
         }
 
+        // 遍历每一个消息容器，提取其中的消息内容
         messageContainers.forEach((container, index) => {
             let content = '';
             let thinking = '';
             let sender: 'user' | 'AI' | '' = '';
 
-            // Check if user message
+            // 检查是否为用户发送的消息（存在 send_message 区块）
             const sendMessage = container.querySelector('[data-testid="send_message"]');
             if (sendMessage) {
                 sender = 'user';
                 const userTextElement = sendMessage.querySelector('[data-testid="message_text_content"]');
                 if (userTextElement) {
+                    // 提取用户消息文本内容
                     content = (userTextElement as HTMLElement).innerText.trim();
                 }
             }
 
-            // Check if AI message
+            // 检查是否为 AI 回复的消息（存在 receive_message 区块）
             const receiveMessage = container.querySelector('[data-testid="receive_message"]');
             if (receiveMessage) {
                 sender = 'AI';
 
-                // Find thinking content (if exists in collapsed thinking block)
+                // 查找 AI 回复下的思考（如果有收起的思考块则提取）
                 const thinkingBlock = receiveMessage.querySelector('.think-quota-block-mdbox-jawSft');
                 if (thinkingBlock) {
                     thinking = this.extractFormattedContent(thinkingBlock);
                 }
 
-                // Find AI response content
+                // 查找 AI 回复的文本内容区块
                 const aiTextElement = receiveMessage.querySelector('[data-testid="message_text_content"]');
                 if (aiTextElement) {
+                    // 提取 AI 消息文本内容（格式化处理）
                     content = this.extractFormattedContent(aiTextElement);
                 }
             }
 
+            // 如果提取到了内容且确定了发送者，则生成消息对象并推入数组
             if (content && sender) {
                 const messageId = this.generateMessageId(sender, content, index);
 
@@ -150,6 +159,7 @@ export class DoubaoAdapter extends BasePlatformAdapter {
             }
         });
 
+        // 返回提取到的所有消息
         return messages;
     }
 

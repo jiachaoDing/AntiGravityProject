@@ -136,9 +136,29 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
     }
 
     const handleResultClick = async (conversationId: string, messageId: string) => {
-        // Tokenize keyword for proper multi-word highlighting
-        const tokens = await window.electronAPI.tokenize(keyword)
-        onNavigate('history', conversationId, messageId, tokens.join(' '))
+        console.log('handleResultClick', conversationId, messageId)
+    
+        try {
+            const tokens = await window.electronAPI.tokenize(keyword)
+            
+            // 根据返回类型处理
+            let tokenString: string
+            
+            if (Array.isArray(tokens)) {
+                tokenString = tokens.join(' ')
+            } else if (typeof tokens === 'string') {
+                tokenString = tokens
+            } else {
+                // 其他情况回退到原始关键词
+                tokenString = keyword || ''
+                console.warn('Unexpected tokens type:', typeof tokens, tokens)
+            }
+            
+            onNavigate('history', conversationId, messageId, tokenString)
+        } catch (error) {
+            console.error('Tokenization failed:', error)
+            onNavigate('history', conversationId, messageId, keyword || '')
+        }
     }
 
     return (

@@ -29,14 +29,26 @@ export class KimiAdapter extends BasePlatformAdapter {
         const chatContainer = document.querySelector('.chat-content-list')
         if (!chatContainer) return messages
 
-        const messageElements = chatContainer.querySelectorAll('.chat-content-item')
+        
 
+
+        const messageElements = chatContainer.querySelectorAll('.chat-content-item')
+        
+        // 检查消息框内是否有正在编辑的文本输入，如果有则跳过提取，防止保存未完成或中间状态的内容
+        const existTextarea = Array.from(messageElements).find(element => this.isInEditMode(element as HTMLElement));
+        if (existTextarea) {
+            console.log('KimiAdapter: User is editing, skipping extraction');
+            return [];
+        }
+        
         messageElements.forEach((element, index) => {
             const isUser = element.classList.contains('chat-content-item-user')
             const isAssistant = element.classList.contains('chat-content-item-assistant')
 
             if (!isUser && !isAssistant) return
 
+            
+        // 检查消息框内是否有正在编辑的文本输入，如果有则跳过提取，防止保存未完成或中间状态的内容
             // Extract content
             const content = this.extractFormattedContent(element)
             if (!content?.trim()) return

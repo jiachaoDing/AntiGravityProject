@@ -335,8 +335,29 @@ export function Sidebar({
                     setView('history');
                     if (isSearchResult) {
                       // For search results, navigate with messageId and tokenized keywords
-                      const tokens = await window.electronAPI.tokenize(searchQuery)
-                      onNavigate('history', itemId, messageId, tokens.join(' '))
+
+                      try {
+                        const tokens = await window.electronAPI.tokenize(searchQuery)
+                        
+                        // 根据返回类型处理
+                        let tokenString: string
+                        
+                        if (Array.isArray(tokens)) {
+                            tokenString = tokens.join(' ')
+                        } else if (typeof tokens === 'string') {
+                            tokenString = tokens
+                        } else {
+                            // 其他情况回退到原始关键词
+                            tokenString = searchQuery || ''
+                            console.warn('Unexpected tokens type:', typeof tokens, tokens)
+                        }
+                        onNavigate('history', itemId, messageId, tokenString)
+
+                    } catch (error) {
+                        console.error('Tokenization failed:', error)
+                        onNavigate('history', itemId, messageId, searchQuery || '')
+                    }
+
                     } else {
                       onNavigate('history', itemId)
                     }
