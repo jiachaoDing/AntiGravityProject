@@ -1,6 +1,6 @@
 # Electron AI Browser 项目功能与架构概览
 
-[![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen)](#开源与贡献)
+[![Open Source](https://img.shields.io/badge/Open%20Source-MIT-brightgreen)](#开源与贡献)
 
 本文档旨在全面介绍 Electron AI Browser 的项目定位、核心功能以及技术架构。本项目致力于打造一个统一的 AI 对话管理平台，让用户能够在一个应用中高效地使用和管理多个 AI 服务（如 ChatGPT, Copilot 等）。
 ## 实现成果截图
